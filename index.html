@@ -214,8 +214,7 @@
 </div>
 
             <p class="text-[var(--color-text)] leading-relaxed text-[1.05rem]" data-astro-cid-v2cbyr3p> <span
-                class="italic text-[var(--color-accent)] font-medium" data-astro-cid-v2cbyr3p>Engineering clarity from
-                data chaos..</span> </p>
+                class="italic text-[var(--color-accent)] font-medium" data-astro-cid-v2cbyr3p>Engineering clarity from data chaos.</span> </p>
           </div> <!-- Visual stack -->
           <div class="text-[var(--color-text)] opacity-90" data-astro-cid-v2cbyr3p>
             <!-- Mobile version with automatic scrolling -->
@@ -271,9 +270,9 @@
             <div class="project-card ghost-card" aria-hidden="true" data-astro-cid-amng4zvp></div> <!-- Card 1 --> <a
               href="/reports/FabricPoC-FS/pocfabricgd.html" class="project-card block no-underline" data-astro-cid-amng4zvp>
               <div class="project-content" data-astro-cid-amng4zvp>
-                <h3 data-astro-cid-amng4zvp>FinanicalService-Fabric PoC</h3>
+                <h3 data-astro-cid-amng4zvp>Financial Services-Fabric PoC</h3>
                 <p data-astro-cid-amng4zvp>
-                  Automating resource sensitive data from SAP ECC systems to OneLake, using MS Fabric and defining arhichture and data models for data science and ML workloads on top of it.
+                  Automating resource-sensitive data from SAP ECC systems to OneLake, using MS Fabric and defining architecture and data models for data science and ML workloads.
                 </p> <span class="project-link" data-astro-cid-amng4zvp>View project →</span>
               </div>
             </a> <!-- Card 2 --> <a href="/reports/Databricks-EC/dbmy.html" class="project-card block no-underline"
@@ -410,17 +409,19 @@
            transition-all duration-300
            md:hover:scale-[1.02] md:hover:shadow-lg md:hover:border-[var(--color-accent)]/30">
           <form id="googleForm" class="flex flex-col space-y-4">
-            <div> <label for="name" class="block text-sm font-bold text-[var(--color-text)]">Name:</label> <input
-                type="text" id="name" name="entry.422634929" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
-                 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"> </div>
-            <div> <label for="email" class="block text-sm font-bold text-[var(--color-text)]">Email:</label> <input
-                type="email" id="email" name="entry.1704418349" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
-                 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"> </div>
-            <div> <label for="message" class="block text-sm font-bold text-[var(--color-text)]">Message:</label>
-              <textarea id="message" name="entry.770947541" rows="4" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
-                 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"></textarea> </div>
-            <button type="submit" class="self-start bg-[var(--color-accent)] text-white px-6 py-2 rounded-md font-semibold
-               hover:bg-opacity-90 transition duration-300">
+            <div>
+              <label for="name" class="block text-sm font-bold text-[var(--color-text)] mb-2">Name</label>
+              <input type="text" id="name" name="entry.422634929" required class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 placeholder-gray-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
+            </div>
+            <div>
+              <label for="email" class="block text-sm font-bold text-[var(--color-text)] mb-2">Email</label>
+              <input type="email" id="email" name="entry.1704418349" required class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 placeholder-gray-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
+            </div>
+            <div>
+              <label for="message" class="block text-sm font-bold text-[var(--color-text)] mb-2">Message</label>
+              <textarea id="message" name="entry.770947541" rows="5" required class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 placeholder-gray-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent resize-none"></textarea>
+            </div>
+            <button type="submit" class="self-start bg-[var(--color-accent)] text-white px-8 py-3 rounded-lg font-semibold transition duration-300 hover:opacity-90 hover:shadow-lg">
               Send
             </button>
           </form>
@@ -428,7 +429,8 @@
         <script
           type="module">document.getElementById("googleForm").addEventListener("submit", async function (e) { e.preventDefault(); const t = new FormData(this); await fetch("https://docs.google.com/forms/d/e/1FAIpQLSefhjSfuulrGpybj092Fqt28vReDCYYswLGPyiMREl5mW3PkQ/formResponse", { method: "POST", body: t, mode: "no-cors" }), alert("Message sent!"), this.reset() });</script>
       </div>
-      © 2026 Priyamvada Bhardwaj — <a href="/mentions-legales" class="hover:underline">Legal notice</a> </div>
+      <footer class="w-full text-center text-sm text-[var(--color-text)] opacity-75 mt-12 pt-8 border-t border-[var(--color-accent)]/20">
+        <p>© 2026 Priyamvada Bhardwaj — <a href="/mentions-legales" class="text-[var(--color-accent)] hover:underline transition duration-200">Legal notice</a></p>
       </footer>
     </section>
   </main>
