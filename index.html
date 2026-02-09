@@ -199,29 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
 A question <span class="text-[var(--color-accent)]">?</span> Get in touch <span class="text-[var(--color-accent)]">!</span> </h2> </div> <!-- Form card --> <div class="max-w-2xl w-full group"> <div class="rounded-2xl bg-[var(--color-bg)]/70 border border-[var(--color-accent)]/20
            shadow-sm p-6 md:p-8 backdrop-blur-sm
            transition-all duration-300
-           md:hover:scale-[1.02] md:hover:shadow-lg md:hover:border-[var(--color-accent)]/30"> <form id="googleForm" class="flex flex-col space-y-4"> <div> <label for="name" class="block text-sm font-bold text-[var(--color-text)]">Name:</label> <input type="text" id="name" name="entry.645437043" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
-                 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"> </div> <div> <label for="email" class="block text-sm font-bold text-[var(--color-text)]">Email:</label> <input type="email" id="email" name="entry.48616742" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
-                 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"> </div> <div> <label for="message" class="block text-sm font-bold text-[var(--color-text)]">Message:</label> <textarea id="message" name="entry.705066161" rows="4" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
+           md:hover:scale-[1.02] md:hover:shadow-lg md:hover:border-[var(--color-accent)]/30"> <form id="googleForm" class="flex flex-col space-y-4"> <div> <label for="name" class="block text-sm font-bold text-[var(--color-text)]">Name:</label> <input type="text" id="name" name="entry.422634929" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
+                 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"> </div> <div> <label for="email" class="block text-sm font-bold text-[var(--color-text)]">Email:</label> <input type="email" id="email" name="entry.770947541" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
+                 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"> </div> <div> <label for="message" class="block text-sm font-bold text-[var(--color-text)]">Message:</label> <textarea id="message" name="entry.770947541" rows="4" required class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-800
                  focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] resize-none"></textarea> </div> <button type="submit" class="self-start bg-[var(--color-accent)] text-white px-6 py-2 rounded-md font-semibold
                hover:bg-opacity-90 transition duration-300">
 Send
-<form id="googleForm">
-  <input name="entry.1234567890" type="text" required>
-  <button type="submit">Send</button>
-</form>
-
-<script type="module">
-  document.getElementById("googleForm")
-    .addEventListener("submit", async function(e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-      await fetch("https://docs.google.com/forms/u/0/d/e/1FAIpQLSefhjSfuulrGpybj092Fqt28vReDCYYswLGPyiMREl5mW3PkQ/formResponse", {
-        method: "POST",
-        body: formData,
-        mode: "no-cors"
-      });
-      alert("Message sent!");
-      this.reset();
-    });
-</script>
+</button> </form> </div> <script type="module">document.getElementById("googleForm").addEventListener("submit",async function(e){e.preventDefault();const t=new FormData(this);await fetch("https://docs.google.com/forms/d/e/1FAIpQLSfPa5Z94_QiVvjlGvBwjRW54__qqMBavXZ7mtIAUhDRhTZGTw/formResponse",{method:"POST",body:t,mode:"no-cors"}),alert("Message sent!"),this.reset()});</script></div> </section> <section id="partners-footer" class="snap-start min-h-screen w-full flex flex-col"> <!-- Partners area --> <div id="partners-section" class="section-gradient-partners flex-1 w-full text-center px-6 py-16 overflow-hidden"> <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-semibold leading-tight text-[var(--color-text)] mb-20" data-astro-cid-s63cuhea></h2>
 © 2026 Priyamvada Bhardwaj — <a href="/mentions-legales" class="hover:underline">Legal notice</a> </div> </footer> </section> </main> <script type="module">const c=document.querySelector("main");document.querySelectorAll('a[href^="#"]').forEach(e=>{e.addEventListener("click",o=>{const t=e.getAttribute("href"),r=document.querySelector(t);!r||!c||(o.preventDefault(),r.scrollIntoView({behavior:"smooth",block:"start"}),history.pushState(null,"",t))})});</script> </body> <script type="module">(function(){const e=localStorage.getItem("theme");e&&document.documentElement.setAttribute("data-theme",e)})();</script> </html>
