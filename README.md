@@ -1,4 +1,4 @@
-# Hi there! I am Siya!
+# Hi there! I am Priyam!
 
 
 ![GitHub Logo](assets/img/analysis.png)
