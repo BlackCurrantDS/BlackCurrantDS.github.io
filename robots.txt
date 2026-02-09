@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://ncsdecoopman.github.io/sitemap.xml
+Sitemap: https://blackcurrantds.github.io/sitemap.xml
