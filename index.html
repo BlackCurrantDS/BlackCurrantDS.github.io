@@ -334,13 +334,13 @@
           if (cards.length === 0) return;
           let idx = 0, timer = null;
           const clamp = i => Math.max(0, Math.min(cards.length - 1, i));
-          function goTo(i) {
+          function goTo(i, behavior = 'smooth') {
             if (i >= cards.length) i = 0;
             if (i < 0) i = cards.length - 1;
             idx = clamp(i);
             const el = cards[idx];
             const target = el.offsetLeft - (grid.clientWidth - el.clientWidth) / 2;
-            grid.scrollTo({ left: target, behavior: 'smooth' });
+            grid.scrollTo({ left: target, behavior: behavior });
             updateDots();
           }
           function syncIndex() {
@@ -389,8 +389,7 @@
           });
           window.addEventListener('resize', () => { syncIndex(); goTo(idx); });
           window.scrollProjects = (dir) => { stopAuto(); goTo(idx + dir); };
-          syncIndex();
-          goTo(idx);
+          goTo(0, 'auto');
           startAuto();
         });
       </script>
