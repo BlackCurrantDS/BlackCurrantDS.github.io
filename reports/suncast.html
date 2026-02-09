@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.550">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Nicolas Decoopman">
+<meta name="keywords" content="HPC, calcul parallèle, OpenMP, Slurm, C++, Python, solaire, lever du soleil, coucher du soleil, DEM, modèle numérique d’élévation, Parquet, GDAL, géospatial, topographie">
+<meta name="description" content="SunCast est un pipeline de calcul haute performance des heures de lever et coucher du soleil pour la France. Le projet combine un calculateur C++ optimisé avec OpenMP et une orchestration Python pour générer des données solaires géoréférencées en format Parquet.">
+
+<title>SunCast - Calcul et visualisation haute résolution des heures de lever et coucher du soleil</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="suncast_files/libs/clipboard/clipboard.min.js"></script>
+<script src="suncast_files/libs/quarto-html/quarto.js"></script>
+<script src="suncast_files/libs/quarto-html/popper.min.js"></script>
+<script src="suncast_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="suncast_files/libs/quarto-html/anchor.min.js"></script>
+<link href="suncast_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="suncast_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="suncast_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="suncast_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="suncast_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<style>
+/* Masquer les métadonnées (description, auteur, mots-clés) */
+.quarto-title-meta {
+    display: none !important;
+}
+
+/* Masquer la description visible */
+.description {
+    display: none !important;
+}
+
+/* Masquer les mots-clés visibles */
+.keywords {
+    display: none !important;
+}
+
+.quarto-float-caption {
+    text-align: center !important;
+}
+
+.intro-links {
+    display: flex;
+    flex-direction: column; /* titre au-dessus */
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    margin-bottom: 1em;
+    font-family: "Segoe UI", Roboto, sans-serif;
+}
+
+.intro-links span.title {
+    font-weight: 600;
+    font-size: 1.2em;
+    letter-spacing: 0.02em;
+}
+
+.icon-links {
+    display: flex;
+    gap: 0.6em;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-links a svg {
+    transition: transform 0.2s ease, fill 0.2s ease;
+}
+
+.icon-links a:hover svg {
+    transform: scale(1.1);
+    fill: #007acc;
+}
+
+.icon {
+width: 24px;
+height: 24px;
+display: inline-block;
+vertical-align: middle;
+}
+
+nav#TOC {
+    text-align: left !important;
+    min-width: 240px;
+    max-width: 260px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    border-right: 1px solid #ddd;
+    padding: 1rem;
+    font-size: 1rem;
+}
+
+/* Supprime l'espace réservé à la marge droite inutilisée */
+.quarto-margin-sidebar {
+    display: none !important;
+}
+
+.page-columns {
+    grid-template-areas: "body" !important;
+    grid-template-columns: 1fr !important;
+}
+
+main.content {
+    margin-left: 280px;
+    padding: 1rem;
+    max-width: 80vw; /* Limite à 90% de la largeur de la fenêtre */
+    box-sizing: border-box;
+}
+
+body {
+    text-align: justify;
+    font-size: 1rem;
+    flex-direction: column;
+    max-width: 80vw;
+    box-sizing: border-box;
+}
+
+/* Formules MathJax responsives */
+.math.display {
+    display: inline-block;
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+a {
+    word-break: break-word;
+}
+
+table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+@media screen and (max-width: 768px) {
+    nav#TOC {
+        display: none; /* Cacher la table des matières */
+    }
+    main.content {
+        margin-left: 0;
+        max-width: 98vw;
+    }
+    body {
+        max-width: 98vw;
+    }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+const toc = document.querySelector("nav#TOC");
+if (toc) {
+    const introLinks = document.createElement("div");
+    introLinks.className = "intro-links";
+
+    introLinks.innerHTML = `
+    <span class="title">{NCS}decoopman</span>
+    <div class="icon-links">
+        <a href="https://ncsdecoopman.github.io/" title="Accueil" aria-label="Page d'accueil">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        </a>
+        <a href="https://github.com/NCSdecoopman/SunCast" title="Voir sur GitHub" target="_blank" rel="noopener" aria-label="Voir le projet sur GitHub">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+        <path d="M12 .5c-6.63 0-12 5.37-12 12 0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.726-4.042-1.61-4.042-1.61-.546-1.385-1.333-1.753-1.333-1.753-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.775.42-1.305.763-1.605-2.665-.305-5.466-1.332-5.466-5.932 0-1.31.468-2.382 1.235-3.222-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.29-1.552 3.296-1.23 3.296-1.23.653 1.653.242 2.873.12 3.176.77.84 1.233 1.912 1.233 3.222 0 4.61-2.803 5.625-5.475 5.922.432.372.816 1.103.816 2.222 0 1.606-.015 2.896-.015 3.286 0 .322.216.694.825.576 4.765-1.586 8.2-6.085 8.2-11.385 0-6.63-5.37-12-12-12z"/>
+        </svg>
+        </a>
+    </div>
+    `;
+
+    toc.prepend(introLinks);
+}
+});
+</script>
+
+
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-2YTSV4PT9X"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config','G-2YTSV4PT9X', { 'anonymize_ip': true });
+</script>
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Plan</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction"><span class="header-section-number">1</span> Introduction</a></li>
+  <li><a href="#contexte-et-problématique" id="toc-contexte-et-problématique" class="nav-link" data-scroll-target="#contexte-et-problématique"><span class="header-section-number">2</span> Contexte et problématique</a></li>
+  <li><a href="#données" id="toc-données" class="nav-link" data-scroll-target="#données"><span class="header-section-number">3</span> Données</a>
+  <ul class="collapse">
+  <li><a href="#modèles-numériques-délévation-dem" id="toc-modèles-numériques-délévation-dem" class="nav-link" data-scroll-target="#modèles-numériques-délévation-dem"><span class="header-section-number">3.1</span> Modèles Numériques d’Élévation (DEM)</a></li>
+  <li><a href="#limites-administratives" id="toc-limites-administratives" class="nav-link" data-scroll-target="#limites-administratives"><span class="header-section-number">3.2</span> Limites administratives</a></li>
+  <li><a href="#départements-cibles" id="toc-départements-cibles" class="nav-link" data-scroll-target="#départements-cibles"><span class="header-section-number">3.3</span> Départements Cibles</a></li>
+  </ul></li>
+  <li><a href="#approche-et-méthodologie" id="toc-approche-et-méthodologie" class="nav-link" data-scroll-target="#approche-et-méthodologie"><span class="header-section-number">4</span> Approche et méthodologie</a>
+  <ul class="collapse">
+  <li><a href="#architecture-du-pipeline" id="toc-architecture-du-pipeline" class="nav-link" data-scroll-target="#architecture-du-pipeline"><span class="header-section-number">4.1</span> Architecture du pipeline</a>
+  <ul class="collapse">
+  <li><a href="#préparation-des-données" id="toc-préparation-des-données" class="nav-link" data-scroll-target="#préparation-des-données"><span class="header-section-number">4.1.1</span> 1. Préparation des données</a></li>
+  <li><a href="#calcul-solaire" id="toc-calcul-solaire" class="nav-link" data-scroll-target="#calcul-solaire"><span class="header-section-number">4.1.2</span> 2. Calcul solaire</a></li>
+  <li><a href="#stockage-en-parquet" id="toc-stockage-en-parquet" class="nav-link" data-scroll-target="#stockage-en-parquet"><span class="header-section-number">4.1.3</span> 3. Stockage en Parquet</a></li>
+  </ul></li>
+  <li><a href="#parallélisation-multi-niveau" id="toc-parallélisation-multi-niveau" class="nav-link" data-scroll-target="#parallélisation-multi-niveau"><span class="header-section-number">4.2</span> Parallélisation multi-niveau</a></li>
+  <li><a href="#intégration-hpc-avec-slurm" id="toc-intégration-hpc-avec-slurm" class="nav-link" data-scroll-target="#intégration-hpc-avec-slurm"><span class="header-section-number">4.3</span> Intégration HPC avec Slurm</a></li>
+  </ul></li>
+  <li><a href="#technologies-utilisées" id="toc-technologies-utilisées" class="nav-link" data-scroll-target="#technologies-utilisées"><span class="header-section-number">5</span> Technologies utilisées</a></li>
+  <li><a href="#performances" id="toc-performances" class="nav-link" data-scroll-target="#performances"><span class="header-section-number">6</span> Performances</a></li>
+  <li><a href="#exemple" id="toc-exemple" class="nav-link" data-scroll-target="#exemple"><span class="header-section-number">7</span> Exemple</a></li>
+  <li><a href="#difficultés-et-leçons-apprises" id="toc-difficultés-et-leçons-apprises" class="nav-link" data-scroll-target="#difficultés-et-leçons-apprises"><span class="header-section-number">8</span> Difficultés et leçons apprises</a>
+  <ul class="collapse">
+  <li><a href="#gestion-de-la-mémoire-pour-grandes-grilles" id="toc-gestion-de-la-mémoire-pour-grandes-grilles" class="nav-link" data-scroll-target="#gestion-de-la-mémoire-pour-grandes-grilles"><span class="header-section-number">8.1</span> 1. Gestion de la mémoire pour grandes grilles</a></li>
+  <li><a href="#synchronisation-du-pipeline" id="toc-synchronisation-du-pipeline" class="nav-link" data-scroll-target="#synchronisation-du-pipeline"><span class="header-section-number">8.2</span> 2. Synchronisation du pipeline</a></li>
+  </ul></li>
+  <li><a href="#lien-vers-le-projet" id="toc-lien-vers-le-projet" class="nav-link" data-scroll-target="#lien-vers-le-projet"><span class="header-section-number">9</span> Lien vers le projet</a></li>
+  <li><a href="#cas-dusage-et-perspectives" id="toc-cas-dusage-et-perspectives" class="nav-link" data-scroll-target="#cas-dusage-et-perspectives"><span class="header-section-number">10</span> Cas d’usage et perspectives</a>
+  <ul class="collapse">
+  <li><a href="#cas-dusage-actuels" id="toc-cas-dusage-actuels" class="nav-link" data-scroll-target="#cas-dusage-actuels"><span class="header-section-number">10.1</span> Cas d’usage actuels</a></li>
+  <li><a href="#perspectives-dévolution" id="toc-perspectives-dévolution" class="nav-link" data-scroll-target="#perspectives-dévolution"><span class="header-section-number">10.2</span> Perspectives d’évolution</a></li>
+  </ul></li>
+  <li><a href="#références" id="toc-références" class="nav-link" data-scroll-target="#références"><span class="header-section-number">11</span> Références</a></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">SunCast - Calcul et visualisation haute résolution des heures de lever et coucher du soleil</h1>
+</div>
+
+<div>
+  <div class="description">
+    SunCast est un pipeline de calcul haute performance des heures de lever et coucher du soleil pour la France. Le projet combine un calculateur C++ optimisé avec OpenMP et une orchestration Python pour générer des données solaires géoréférencées en format Parquet.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Auteur·rice</div>
+    <div class="quarto-title-meta-contents">
+             <p>Nicolas Decoopman </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+<div>
+  <div class="keywords">
+    <div class="block-title">Mots clés</div>
+    <p>HPC, calcul parallèle, OpenMP, Slurm, C++, Python, solaire, lever du soleil, coucher du soleil, DEM, modèle numérique d’élévation, Parquet, GDAL, géospatial, topographie</p>
+  </div>
+</div>
+
+</header>
+
+
+<section id="introduction" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<p><strong>SunCast</strong> est un pipeline de calcul haute performance (HPC) qui génère des données solaires géoréférencées (heures de lever et coucher du soleil) pour des territoires français. Le projet combine efficacement :</p>
+<ul>
+<li>Un <strong>calculateur C++</strong> optimisé avec OpenMP pour le parallélisme sur mémoire partagée (jusqu’à 96 cœurs par tâche)</li>
+<li>Une <strong>orchestration Python</strong> pour la gestion des données et la génération de formats Parquet partitionnés</li>
+<li>Une <strong>intégration Slurm</strong> pour le déploiement sur clusters HPC via des <em>job arrays</em></li>
+</ul>
+<p>Le pipeline traite des modèles numériques d’élévation (DEM) départementaux pour calculer les heures solaires en tenant compte de la topographie locale, avec un stockage efficace en format Parquet <span class="citation" data-cites="mckinney2011pandas gdal2022">(<a href="#ref-mckinney2011pandas" role="doc-biblioref">1</a>,<a href="#ref-gdal2022" role="doc-biblioref">2</a>)</span>.</p>
+</section>
+<section id="contexte-et-problématique" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Contexte et problématique</h1>
+<p>Les heures de lever et coucher du soleil varient en fonction de la topographie locale, créant des ombres portées qui influencent l’ensoleillement réel d’un point géographique. Ces informations sont cruciales pour :</p>
+<ul>
+<li>Les <strong>applications d’énergie solaire</strong> : optimisation du placement de panneaux photovoltaïques</li>
+<li>L’<strong>agriculture de précision</strong> : planification des cycles de culture</li>
+<li>Les <strong>études climatiques</strong> : analyse de l’exposition solaire sur de vastes territoires</li>
+</ul>
+<p>Le principal défi réside dans le <strong>volume de calcul massif</strong> : pour un territoire comme un département français, il faut calculer les heures solaires pour chaque pixel d’un raster haute résolution (plusieurs millions de pixels) sur une année complète (365 jours), tout en intégrant les effets topographiques. Cette complexité nécessite une approche HPC optimisée <span class="citation" data-cites="dagum1998openmp">(<a href="#ref-dagum1998openmp" role="doc-biblioref">3</a>)</span>.</p>
+</section>
+<section id="données" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Données</h1>
+<p>L’étude s’appuie sur plusieurs sources de données géospatiales :</p>
+<section id="modèles-numériques-délévation-dem" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="modèles-numériques-délévation-dem"><span class="header-section-number">3.1</span> Modèles Numériques d’Élévation (DEM)</h2>
+<p>Les DEM utilisés dans ce projet proviennent du programme <strong>Copernicus</strong> <span class="citation" data-cites="copernicus2022">(<a href="#ref-copernicus2022" role="doc-biblioref">4</a>)</span>. Ces rasters haute résolution fournissent l’altitude de chaque pixel du territoire étudié, permettant de calculer les ombres portées par la topographie.</p>
+<ul>
+<li><strong>Format</strong> : GeoTIFF</li>
+<li><strong>Projection</strong> : WGS84 (EPSG:4326)</li>
+<li><strong>Résolution</strong> : Variable selon les données source</li>
+</ul>
+</section>
+<section id="limites-administratives" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="limites-administratives"><span class="header-section-number">3.2</span> Limites administratives</h2>
+<p>Les limites des départements français proviennent des données <strong>IGN</strong> (Institut National de l’Information Géographique et Forestière), permettant de découper les DEM par département pour un traitement parallélisé.</p>
+<ul>
+<li><strong>Format</strong> : Shapefile</li>
+<li><strong>Projection</strong> : WGS84 (EPSG:4326)</li>
+</ul>
+</section>
+<section id="départements-cibles" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="départements-cibles"><span class="header-section-number">3.3</span> Départements Cibles</h2>
+<p>La configuration actuelle traite trois départements alpins :</p>
+<ul>
+<li><strong>38</strong> : Isère</li>
+<li><strong>73</strong> : Savoie<br>
+</li>
+<li><strong>74</strong> : Haute-Savoie</li>
+</ul>
+<p>Cette liste est configurable dans <code>src/config.py</code>.</p>
+</section>
+</section>
+<section id="approche-et-méthodologie" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Approche et méthodologie</h1>
+<section id="architecture-du-pipeline" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="architecture-du-pipeline"><span class="header-section-number">4.1</span> Architecture du pipeline</h2>
+<p>Le pipeline suit une approche en trois étapes :</p>
+<section id="préparation-des-données" class="level3" data-number="4.1.1">
+<h3 data-number="4.1.1" class="anchored" data-anchor-id="préparation-des-données"><span class="header-section-number">4.1.1</span> 1. Préparation des données</h3>
+<p>Les DEM départementaux sont extraits du raster source à l’aide de <code>gdalwarp</code> ou <code>rasterio</code> :</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> src.data.process_dem</span></code><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Cette étape génère un fichier <code>dem_dept_XX.tif</code> pour chaque département dans <code>data/processed/</code>.</p>
+</section>
+<section id="calcul-solaire" class="level3" data-number="4.1.2">
+<h3 data-number="4.1.2" class="anchored" data-anchor-id="calcul-solaire"><span class="header-section-number">4.1.2</span> 2. Calcul solaire</h3>
+<p>Le calculateur C++ lit chaque DEM départemental et calcule, pour chaque pixel et pour chaque jour de l’année :</p>
+<ul>
+<li><strong>Heure de lever du soleil</strong> (en minutes après minuit)</li>
+<li><strong>Heure de coucher du soleil</strong> (en minutes après minuit)</li>
+</ul>
+<p>Ces calculs intègrent :</p>
+<ul>
+<li>La <strong>position géographique</strong> (latitude/longitude de chaque pixel)</li>
+<li>L’<strong>équation du temps</strong> et la <strong>déclinaison solaire</strong> <span class="citation" data-cites="michalsky1988">(<a href="#ref-michalsky1988" role="doc-biblioref">5</a>)</span></li>
+<li>Les <strong>ombres portées</strong> par la topographie environnante</li>
+</ul>
+</section>
+<section id="stockage-en-parquet" class="level3" data-number="4.1.3">
+<h3 data-number="4.1.3" class="anchored" data-anchor-id="stockage-en-parquet"><span class="header-section-number">4.1.3</span> 3. Stockage en Parquet</h3>
+<p>Les résultats sont écrits en streaming dans des fichiers Parquet partitionnés par département :</p>
+<pre><code>data/parquet/
+├── dept=38/
+│   ├── data.parquet
+│   └── metadata.json
+├── dept=73/
+│   └── ...
+└── dept=74/
+    └── ...</code></pre>
+<p>Chaque fichier Parquet contient trois colonnes :</p>
+<ul>
+<li><code>day</code> (int32) : Jour de l’année (1-365)</li>
+<li><code>sunrise</code> (list[int16]) : Tableau des heures de lever pour tous les pixels</li>
+<li><code>sunset</code> (list[int16]) : Tableau des heures de coucher pour tous les pixels</li>
+</ul>
+</section>
+</section>
+<section id="parallélisation-multi-niveau" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="parallélisation-multi-niveau"><span class="header-section-number">4.2</span> Parallélisation multi-niveau</h2>
+<p>Le projet exploite une <strong>double parallélisation</strong> :</p>
+<ol type="1">
+<li><p><strong>Niveau 1 - Parallélisme sur mémoire partagée (OpenMP)</strong><br>
+À l’intérieur de chaque tâche, le code C++ utilise OpenMP pour distribuer le calcul sur 96 threads, exploitant tous les cœurs d’un nœud HPC <span class="citation" data-cites="dagum1998openmp">(<a href="#ref-dagum1998openmp" role="doc-biblioref">3</a>)</span>.</p></li>
+<li><p><strong>Niveau 2 - Parallélisme sur tâches distribuées (Slurm)</strong><br>
+Chaque département est traité par une tâche Slurm indépendante via un <em>job array</em>, permettant de paralléliser au niveau du cluster <span class="citation" data-cites="yoo2003slurm">(<a href="#ref-yoo2003slurm" role="doc-biblioref">6</a>)</span>.</p></li>
+</ol>
+</section>
+<section id="intégration-hpc-avec-slurm" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="intégration-hpc-avec-slurm"><span class="header-section-number">4.3</span> Intégration HPC avec Slurm</h2>
+<p>Le script <code>submit_job.slurm</code> configure le déploiement sur cluster :</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=SunCast_solar</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --array=0-2</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=96</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04:00:00</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> src.solar.run_solar_parquet <span class="at">--index</span> <span class="va">$SLURM_ARRAY_TASK_ID</span></span></code><button title="Copier vers le presse-papier" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Chaque tâche du <em>job array</em> traite un département différent en utilisant l’index <code>SLURM_ARRAY_TASK_ID</code> pour sélectionner le bon département dans la configuration.</p>
+</section>
+</section>
+<section id="technologies-utilisées" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Technologies utilisées</h1>
+<p>Le projet s’appuie sur un stack technologique robuste :</p>
+<table class="table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 72%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>Catégorie</strong></th>
+<th><strong>Outils</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Calcul C++</strong></td>
+<td>C++17, OpenMP, GDAL</td>
+</tr>
+<tr class="even">
+<td><strong>Orchestration</strong></td>
+<td>Python 3.8+, pandas, NumPy, rasterio</td>
+</tr>
+<tr class="odd">
+<td><strong>Stockage</strong></td>
+<td>PyArrow, Parquet (compression Snappy)</td>
+</tr>
+<tr class="even">
+<td><strong>Visualisation</strong></td>
+<td>Matplotlib, GeoPandas</td>
+</tr>
+<tr class="odd">
+<td><strong>HPC</strong></td>
+<td>Slurm, job arrays</td>
+</tr>
+<tr class="even">
+<td><strong>Build</strong></td>
+<td>CMake 3.15+, gcc/clang avec support C++17</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="performances" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Performances</h1>
+<p>Les optimisations du pipeline permettent d’atteindre des performances élevées :</p>
+<ul>
+<li><strong>OpenMP</strong> : Parallélisation sur 96 threads par tâche</li>
+<li><strong>Compilation optimisée</strong> : <code>-O3 -march=native</code></li>
+<li><strong>Streaming binaire</strong> : Communication directe C++ → Python sans fichiers intermédiaires</li>
+<li><strong>Format Parquet</strong> : Compression efficace (Snappy) et lecture sélective</li>
+</ul>
+<p>Pour un département de taille moyenne (~2 millions de pixels), le temps de calcul est de l’ordre de quelques minutes sur un nœud 96 cœurs.</p>
+</section>
+<section id="exemple" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Exemple</h1>
+<div class="center">
+<p><a href="result/dept38_sunset.png"><img src="result/dept38_sunset.png" class="img-fluid"></a> Figure 1 : Heure du coucher de soleil dans le département de l’Isère (38) le jeudi 4 décembre 2025.</p>
+</div>
+</section>
+<section id="difficultés-et-leçons-apprises" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Difficultés et leçons apprises</h1>
+<p>Le développement de SunCast a mis en lumière plusieurs défis techniques :</p>
+<section id="gestion-de-la-mémoire-pour-grandes-grilles" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="gestion-de-la-mémoire-pour-grandes-grilles"><span class="header-section-number">8.1</span> 1. Gestion de la mémoire pour grandes grilles</h2>
+<p>Le traitement de rasters haute résolution (plusieurs millions de pixels × 365 jours) génère des volumes de données importants. L’approche de <strong>streaming binaire</strong> entre C++ et Python a permis d’éviter l’écriture de fichiers intermédiaires volumineux, réduisant ainsi l’empreinte disque et le temps I/O.</p>
+</section>
+<section id="synchronisation-du-pipeline" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="synchronisation-du-pipeline"><span class="header-section-number">8.2</span> 2. Synchronisation du pipeline</h2>
+<p>L’utilisation de <code>subprocess.Popen</code> avec des <em>pipes</em> nécessite une gestion rigoureuse du flux de données pour éviter les blocages. La lecture exacte du nombre d’octets attendus (<code>read_exact</code>) garantit la cohérence entre le producteur (C++) et le consommateur (Python).</p>
+</section>
+</section>
+<section id="lien-vers-le-projet" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Lien vers le projet</h1>
+<p>Le code source est accessible sur GitHub : <a href="https://github.com/NCSdecoopman/SunCast">https://github.com/NCSdecoopman/SunCast</a></p>
+</section>
+<section id="cas-dusage-et-perspectives" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Cas d’usage et perspectives</h1>
+<section id="cas-dusage-actuels" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="cas-dusage-actuels"><span class="header-section-number">10.1</span> Cas d’usage actuels</h2>
+<ul>
+<li><strong>Énergie solaire</strong> : optimisation du placement de panneaux photovoltaïques en montagne</li>
+<li><strong>Glaciologie</strong> : étude de la fonte nivale en fonction de l’exposition solaire</li>
+<li><strong>Agriculture</strong> : planification des cultures en fonction de l’ensoleillement</li>
+</ul>
+</section>
+<section id="perspectives-dévolution" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="perspectives-dévolution"><span class="header-section-number">10.2</span> Perspectives d’évolution</h2>
+<ol type="1">
+<li><strong>Extension géographique</strong> : traitement de l’ensemble des départements français</li>
+<li><strong>Résolution temporelle</strong> : calcul horaire au lieu de quotidien pour des applications temps réel</li>
+<li><strong>Résolution géographique</strong> : l’objectif est de descendre à une résolution de 5 m au lieu de 90 m actuellement.</li>
+<li><strong>Optimisation GPU</strong> : portage du calculateur sur CUDA pour architectures hybrides CPU/GPU</li>
+<li><strong>API de requête</strong> : service web pour interroger les données Parquet de manière interactive</li>
+</ol>
+</section>
+</section>
+<section id="références" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> Références</h1>
+<div id="refs" class="references csl-bib-body" role="list">
+<div id="ref-mckinney2011pandas" class="csl-entry" role="listitem">
+<div class="csl-left-margin">1. </div><div class="csl-right-inline">McKinney W et al. pandas: a foundational Python library for data analysis and statistics. Python for high performance and scientific computing. 2011;14(9):1‑9. </div>
+</div>
+<div id="ref-gdal2022" class="csl-entry" role="listitem">
+<div class="csl-left-margin">2. </div><div class="csl-right-inline">GDAL/OGR contributors. GDAL/OGR Geospatial Data Abstraction software Library [Internet]. Open Source Geospatial Foundation; 2022. Disponible sur: <a href="https://gdal.org">https://gdal.org</a></div>
+</div>
+<div id="ref-dagum1998openmp" class="csl-entry" role="listitem">
+<div class="csl-left-margin">3. </div><div class="csl-right-inline">Dagum L, Menon R. OpenMP: an industry standard API for shared-memory programming. IEEE computational science and engineering. 1998;5(1):46‑55. </div>
+</div>
+<div id="ref-copernicus2022" class="csl-entry" role="listitem">
+<div class="csl-left-margin">4. </div><div class="csl-right-inline">European Space Agency. Copernicus Digital Elevation Model [Internet]. Distributed by the European Space Agency on behalf of the European Union; 2022. Disponible sur: <a href="https://spacedata.copernicus.eu/">https://spacedata.copernicus.eu/</a></div>
+</div>
+<div id="ref-michalsky1988" class="csl-entry" role="listitem">
+<div class="csl-left-margin">5. </div><div class="csl-right-inline">Michalsky JJ. The astronomical almanac’s algorithm for approximate solar position (1950–2050). Solar energy. 1988;40(3):227‑35. </div>
+</div>
+<div id="ref-yoo2003slurm" class="csl-entry" role="listitem">
+<div class="csl-left-margin">6. </div><div class="csl-right-inline">Yoo AB, Jette MA, Grondona M. SLURM: Simple Linux Utility for Resource Management. In: Workshop on Job Scheduling Strategies for Parallel Processing. Springer; 2003. p. 44‑60. </div>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copié");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copié");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

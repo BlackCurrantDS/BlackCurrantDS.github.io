@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.550">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Nicolas Decoopman">
+<meta name="keywords" content="données manquantes, imputation, reconstruction de données, science des données, méthodes statistiques, analyse comparative">
+<meta name="description" content="Comparaison des méthodes d’imputation de données manquantes en science des données. Simulation et évaluation de l’efficacité des techniques de reconstruction de données incomplètes.">
+
+<title>MissingDataLab - Simulation et imputation de données manquantes</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="missingdatalab_files/libs/clipboard/clipboard.min.js"></script>
+<script src="missingdatalab_files/libs/quarto-html/quarto.js"></script>
+<script src="missingdatalab_files/libs/quarto-html/popper.min.js"></script>
+<script src="missingdatalab_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="missingdatalab_files/libs/quarto-html/anchor.min.js"></script>
+<link href="missingdatalab_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="missingdatalab_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="missingdatalab_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="missingdatalab_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="missingdatalab_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<style>
+/* Masquer les métadonnées (description, auteur, mots-clés) */
+.quarto-title-meta {
+    display: none !important;
+}
+
+/* Masquer la description visible */
+.description {
+    display: none !important;
+}
+
+/* Masquer les mots-clés visibles */
+.keywords {
+    display: none !important;
+}
+
+.intro-links {
+    display: flex;
+    flex-direction: column; /* titre au-dessus */
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    margin-bottom: 1em;
+    font-family: "Segoe UI", Roboto, sans-serif;
+}
+
+.intro-links span.title {
+    font-weight: 600;
+    font-size: 1.2em;
+    letter-spacing: 0.02em;
+}
+
+.icon-links {
+    display: flex;
+    gap: 0.6em;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-links a svg {
+    transition: transform 0.2s ease, fill 0.2s ease;
+}
+
+.icon-links a:hover svg {
+    transform: scale(1.1);
+    fill: #007acc;
+}
+
+.icon {
+width: 24px;
+height: 24px;
+display: inline-block;
+vertical-align: middle;
+}
+
+nav#TOC {
+    text-align: left !important;
+    min-width: 240px;
+    max-width: 260px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    border-right: 1px solid #ddd;
+    padding: 1rem;
+    font-size: 1rem;
+}
+
+/* Supprime l'espace réservé à la marge droite inutilisée */
+.quarto-margin-sidebar {
+    display: none !important;
+}
+
+.page-columns {
+    grid-template-areas: "body" !important;
+    grid-template-columns: 1fr !important;
+}
+
+main.content {
+    margin-left: 280px;
+    padding: 1rem;
+    max-width: 80vw; /* Limite à 90% de la largeur de la fenêtre */
+    box-sizing: border-box;
+}
+
+body {
+    text-align: justify;
+    font-size: 1rem;
+    flex-direction: column;
+    max-width: 80vw;
+    box-sizing: border-box;
+}
+
+/* Formules MathJax responsives */
+.math.display {
+    display: inline-block;
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+a {
+    word-break: break-word;
+}
+
+table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+@media screen and (max-width: 768px) {
+    nav#TOC {
+        display: none; /* Cacher la table des matières */
+    }
+    main.content {
+        margin-left: 0;
+        max-width: 98vw;
+    }
+    body {
+        max-width: 98vw;
+    }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+const toc = document.querySelector("nav#TOC");
+if (toc) {
+    const introLinks = document.createElement("div");
+    introLinks.className = "intro-links";
+
+    introLinks.innerHTML = `
+    <span class="title">{NCS}decoopman</span>
+    <div class="icon-links">
+        <a href="https://ncsdecoopman.github.io/" title="Accueil" aria-label="Page d'accueil">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        </a>
+        <a href="https://github.com/NCSdecoopman/MissingDataLab" title="Voir sur GitHub" target="_blank" rel="noopener" aria-label="Voir le projet sur GitHub">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+        <path d="M12 .5c-6.63 0-12 5.37-12 12 0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.726-4.042-1.61-4.042-1.61-.546-1.385-1.333-1.753-1.333-1.753-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.775.42-1.305.763-1.605-2.665-.305-5.466-1.332-5.466-5.932 0-1.31.468-2.382 1.235-3.222-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.29-1.552 3.296-1.23 3.296-1.23.653 1.653.242 2.873.12 3.176.77.84 1.233 1.912 1.233 3.222 0 4.61-2.803 5.625-5.475 5.922.432.372.816 1.103.816 2.222 0 1.606-.015 2.896-.015 3.286 0 .322.216.694.825.576 4.765-1.586 8.2-6.085 8.2-11.385 0-6.63-5.37-12-12-12z"/>
+        </svg>
+        </a>
+    </div>
+    `;
+
+    toc.prepend(introLinks);
+}
+});
+</script>
+
+
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-2YTSV4PT9X"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config','G-2YTSV4PT9X', { 'anonymize_ip': true });
+</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Plan</h2>
+   
+  <ul>
+  <li><a href="#contexte-et-problématique" id="toc-contexte-et-problématique" class="nav-link active" data-scroll-target="#contexte-et-problématique"><span class="header-section-number">1</span> Contexte et problématique</a></li>
+  <li><a href="#données" id="toc-données" class="nav-link" data-scroll-target="#données"><span class="header-section-number">2</span> Données</a></li>
+  <li><a href="#approche-et-méthologie" id="toc-approche-et-méthologie" class="nav-link" data-scroll-target="#approche-et-méthologie"><span class="header-section-number">3</span> Approche et méthologie</a>
+  <ul class="collapse">
+  <li><a href="#typologie-des-données-manquantes" id="toc-typologie-des-données-manquantes" class="nav-link" data-scroll-target="#typologie-des-données-manquantes"><span class="header-section-number">3.1</span> Typologie des données manquantes</a></li>
+  <li><a href="#génération-des-données-manquantes" id="toc-génération-des-données-manquantes" class="nav-link" data-scroll-target="#génération-des-données-manquantes"><span class="header-section-number">3.2</span> Génération des données manquantes</a></li>
+  <li><a href="#algorithmes-dimputations" id="toc-algorithmes-dimputations" class="nav-link" data-scroll-target="#algorithmes-dimputations"><span class="header-section-number">3.3</span> Algorithmes d’imputations</a></li>
+  <li><a href="#plan-dévaluation" id="toc-plan-dévaluation" class="nav-link" data-scroll-target="#plan-dévaluation"><span class="header-section-number">3.4</span> Plan d’évaluation</a></li>
+  </ul></li>
+  <li><a href="#résultats" id="toc-résultats" class="nav-link" data-scroll-target="#résultats"><span class="header-section-number">4</span> Résultats</a>
+  <ul class="collapse">
+  <li><a href="#bruts" id="toc-bruts" class="nav-link" data-scroll-target="#bruts"><span class="header-section-number">4.1</span> Bruts</a></li>
+  <li><a href="#récapitulatifs" id="toc-récapitulatifs" class="nav-link" data-scroll-target="#récapitulatifs"><span class="header-section-number">4.2</span> Récapitulatifs</a></li>
+  </ul></li>
+  <li><a href="#technologies-utilisées" id="toc-technologies-utilisées" class="nav-link" data-scroll-target="#technologies-utilisées"><span class="header-section-number">5</span> Technologies utilisées</a></li>
+  <li><a href="#difficultés-et-leçons-apprises" id="toc-difficultés-et-leçons-apprises" class="nav-link" data-scroll-target="#difficultés-et-leçons-apprises"><span class="header-section-number">6</span> Difficultés et leçons apprises</a></li>
+  <li><a href="#lien-vers-le-projet" id="toc-lien-vers-le-projet" class="nav-link" data-scroll-target="#lien-vers-le-projet"><span class="header-section-number">7</span> Lien vers le projet</a></li>
+  <li><a href="#cas-dusage-et-perspectives" id="toc-cas-dusage-et-perspectives" class="nav-link" data-scroll-target="#cas-dusage-et-perspectives"><span class="header-section-number">8</span> Cas d’usage et perspectives</a></li>
+  <li><a href="#références" id="toc-références" class="nav-link" data-scroll-target="#références"><span class="header-section-number">9</span> Références</a></li>
+  <li><a href="#annexe-1" id="toc-annexe-1" class="nav-link" data-scroll-target="#annexe-1"><span class="header-section-number">10</span> Annexes 1 : forumulations mathématiques des données manquantes</a>
+  <ul class="collapse">
+  <li><a href="#mcar" id="toc-mcar" class="nav-link" data-scroll-target="#mcar"><span class="header-section-number">10.1</span> Données MCAR</a></li>
+  <li><a href="#mar" id="toc-mar" class="nav-link" data-scroll-target="#mar"><span class="header-section-number">10.2</span> Données MAR</a></li>
+  <li><a href="#mnar" id="toc-mnar" class="nav-link" data-scroll-target="#mnar"><span class="header-section-number">10.3</span> Données MNAR</a></li>
+  <li><a href="#prob_na" id="toc-prob_na" class="nav-link" data-scroll-target="#prob_na"><span class="header-section-number">10.4</span> Probabilité d’abscence</a></li>
+  <li><a href="#prob_argmin" id="toc-prob_argmin" class="nav-link" data-scroll-target="#prob_argmin"><span class="header-section-number">10.5</span> Optimisation</a></li>
+  </ul></li>
+  <li><a href="#annexe-2" id="toc-annexe-2" class="nav-link" data-scroll-target="#annexe-2"><span class="header-section-number">11</span> Annexe 2 : formulations mathématiques des imputations</a>
+  <ul class="collapse">
+  <li><a href="#imput_simple" id="toc-imput_simple" class="nav-link" data-scroll-target="#imput_simple"><span class="header-section-number">11.1</span> Simple</a></li>
+  <li><a href="#imput_knn" id="toc-imput_knn" class="nav-link" data-scroll-target="#imput_knn"><span class="header-section-number">11.2</span> KNN</a></li>
+  <li><a href="#imput_softimputer" id="toc-imput_softimputer" class="nav-link" data-scroll-target="#imput_softimputer"><span class="header-section-number">11.3</span> SoftImputer</a></li>
+  <li><a href="#imput_acp" id="toc-imput_acp" class="nav-link" data-scroll-target="#imput_acp"><span class="header-section-number">11.4</span> ACP</a></li>
+  <li><a href="#imput_ice" id="toc-imput_ice" class="nav-link" data-scroll-target="#imput_ice"><span class="header-section-number">11.5</span> ICE</a></li>
+  <li><a href="#imput_missforest" id="toc-imput_missforest" class="nav-link" data-scroll-target="#imput_missforest"><span class="header-section-number">11.6</span> MissForest</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">MissingDataLab - Simulation et imputation de données manquantes</h1>
+</div>
+
+<div>
+  <div class="description">
+    Comparaison des méthodes d’imputation de données manquantes en science des données. Simulation et évaluation de l’efficacité des techniques de reconstruction de données incomplètes.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Auteur·rice</div>
+    <div class="quarto-title-meta-contents">
+             <p>Nicolas Decoopman </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+<div>
+  <div class="keywords">
+    <div class="block-title">Mots clés</div>
+    <p>données manquantes, imputation, reconstruction de données, science des données, méthodes statistiques, analyse comparative</p>
+  </div>
+</div>
+
+</header>
+
+
+<p>Qui n’a jamais eu <code>ValueError: NaN</code> lors d’une analyse de données. L’étape d’exploration commence souvent avec une analyse des données manquantes. Une donnée manquante correspond à l’absence d’une valeur dans un ensemble de données, là où une information est normalement attendue. Cela peut être dû à une erreur de collecte de la donnée ou une non-réponse lors d’enquête. Problème : un <code>isna()</code> se révèle souvent positif. On réalise alors un <code>dropna()</code> et le problème disparait ! On peut mieux faire.</p>
+<section id="contexte-et-problématique" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="contexte-et-problématique"><span class="header-section-number">1</span> Contexte et problématique</h2>
+<p>La présence de données manquantes peut pertuber les analyses, engendrer une perte d’informations, introduire des biais et réduire les performances de modélisations. Il faut alors <strong>comprendre les mécanismes de manquement des données</strong>, adapter la méthode de collecte lorsque c’est possible et <strong>imputer les données manquantes</strong>.</p>
+<p>Ce projet réalisé en groupe pendant l’année de M2 SSD à l’UGA s’attache à savoir comment mettre en œuvre des stratégies d’imputation efficaces pour différents types de données manquantes : MCAR, MAR, MNAR ? Les objectifs étant de maintenir la validité d’une analyse, d’améliorer la performance et la fiabilité des modèles et d’éviter des conclusions erronées.</p>
+</section>
+<section id="données" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="données"><span class="header-section-number">2</span> Données</h2>
+<p>Les données utilisées proviennent de <a href="https://www.kaggle.com/code/rudraprasadbhuyan/smoking-survey-report-power-bi/notebook">Kaggle</a>. Il s’agit d’un questionnaire concernant les comportements liés à la consommation de cigarettes, composé de 14 variables et de 1000 individus. Parmi ces variables, on trouve des informations telles que le nombre de cigarettes consommées par jour, le nombre d’expériences liées à la drogue, ainsi que des variables explicatives comme le groupe d’âge, le statut socio-économique, et l’accès ou non à une aide pour arrêter de fumer. Un jeu de données semblable a été simulé à l’aide de la bibliothèque <code>simstudy</code> <span class="citation" data-cites="simstudy">(<a href="#ref-simstudy" role="doc-biblioref">1</a>)</span>. Ce jeu de données intègre des corrélations entre les variables. Cette approche permet d’explorer des scénarios variés et proches de la réalité :</p>
+<p>Trois mécanismes liés à la variable représentant l’accès à de l’aide :</p>
+<ul>
+<li>une goutte d’eau rend illisible une réponse</li>
+<li>les personnes qui continuent à fumer cachent avoir eu de l’aide</li>
+<li>les personnes ayant eu de l’aide le cachent</li>
+</ul>
+<p>Ensuite, trois mécanismes liés à la prévalence tabagique :</p>
+<ul>
+<li>un bug réseau empêche l’enregistrement de la réponse</li>
+<li>les personnes jeunes cachent le fait de fumer</li>
+<li>les personnes fumant beaucoup cachent leur consommation tagabique</li>
+</ul>
+</section>
+<section id="approche-et-méthologie" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="approche-et-méthologie"><span class="header-section-number">3</span> Approche et méthologie</h2>
+<section id="typologie-des-données-manquantes" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="typologie-des-données-manquantes"><span class="header-section-number">3.1</span> Typologie des données manquantes</h3>
+<p>Les données manquantes peuvent être classées en trois catégories principales, selon le mécanisme qui génère leur absence. Cette classification est essentielle pour choisir la méthode de traitement adaptée.</p>
+<section id="données-manquantes-complètement-aléatoires-mcar" class="level4" data-number="3.1.1">
+<h4 data-number="3.1.1" class="anchored" data-anchor-id="données-manquantes-complètement-aléatoires-mcar"><span class="header-section-number">3.1.1</span> Données manquantes complètement aléatoires (MCAR)</h4>
+<p>La probabilité que la donnée soit manquante est indépendante de toute autre variable, observée ou non observée. Cela signifie que l’absence d’une donnée est totalement aléatoire et ne dépend d’aucune information contenue dans le jeu de données <span class="citation" data-cites="rubin1976inference">(<a href="#ref-rubin1976inference" role="doc-biblioref">2</a>)</span>.</p>
+<p><strong>Exemple</strong> : lors d’un questionnaire papier, certaines réponses peuvent être perdues à cause d’un problème d’impression. Ici, l’absence de réponse ne dépend ni de la question posée ni des caractéristiques des répondants, ce qui signifie que les données sont absentes de manière totalement aléatoire.</p>
+<p><strong>Formule mathématique</strong> : décrite en <a href="#mcar">annexe</a>.</p>
+</section>
+<section id="données-manquantes-aléatoires-mar" class="level4" data-number="3.1.2">
+<h4 data-number="3.1.2" class="anchored" data-anchor-id="données-manquantes-aléatoires-mar"><span class="header-section-number">3.1.2</span> Données manquantes aléatoires (MAR)</h4>
+<p>La probabilité que la donnée soit manquante dépend uniquement des variables observées, mais pas de la valeur manquante elle-même. Autrement dit, l’absence d’une valeur est expliquée par des variables que l’on peut observer, mais pas par la valeur manquante en elle-même <span class="citation" data-cites="little1987statistical">(<a href="#ref-little1987statistical" role="doc-biblioref">3</a>)</span>.</p>
+<p><strong>Exemple</strong> : dans une enquête sur l’état de santé, il se peut que les personnes plus âgées répondent moins souvent aux questions sur leur activité physique. Ici, l’absence de réponse dépend d’une variable observée (l’âge), mais pas directement du niveau d’activité physique de la personne.</p>
+<p><strong>Formule mathématique</strong> : décrite en <a href="#mar">annexe</a>.</p>
+</section>
+<section id="données-manquantes-non-aléatoires-mnar" class="level4" data-number="3.1.3">
+<h4 data-number="3.1.3" class="anchored" data-anchor-id="données-manquantes-non-aléatoires-mnar"><span class="header-section-number">3.1.3</span> Données manquantes non aléatoires (MNAR)</h4>
+<p>La probabilité que la donnée soit manquante dépend au moins de la valeur de la donnée elle-même. Cela signifie que l’absence d’une donnée est directement liée à sa propre valeur. À noter qu’elle peut tout à fait dépendre également de variables observées (ou non observées). Autrement dit, une donnée manquante de type MNAR se trouve être toute donnée manquante n’étant pas de type MAR ou MCAR.</p>
+<p><strong>Exemple</strong> : lors d’une enquête sur la consommation d’alcool chez les jeunes, les personnes ayant une consommation excessive peuvent être plus enclines à ne pas répondre à la question, par peur du jugement. Dans ce cas, l’absence de réponse est directement liée à la valeur de la variable, ce qui rend le traitement de ces données plus complexe.</p>
+<p><strong>Formule mathématique</strong> : décrite en <a href="#mnar">annexe</a>.</p>
+</section>
+</section>
+<section id="génération-des-données-manquantes" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="génération-des-données-manquantes"><span class="header-section-number">3.2</span> Génération des données manquantes</h3>
+<p>Pour générer la probabilité d’absence d’une observation, on utilise une fonction sigmoïde qui transforme les valeurs en probabilités entre 0 et 1 décrite en <a href="#prob_na">annexe</a>. Pour atteintre une proportion cible de données manquantes, on optimise les paramètres d’ajustement en minimisant l’écart entre la moyenne des probabilités prédites et cette proportion cible <span class="citation" data-cites="vanbuuren2018flexible">(<a href="#ref-vanbuuren2018flexible" role="doc-biblioref">4</a>)</span>, en résolvant l’équation décrite en <a href="#prob_argmin">annexe</a>.</p>
+</section>
+<section id="algorithmes-dimputations" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="algorithmes-dimputations"><span class="header-section-number">3.3</span> Algorithmes d’imputations</h3>
+<p>Pour remplacer les valeurs manquantes dans les jeux de données plusieurs méthodes sont utilisées. Ces méthodes vont des plus simples aux approches plus complexes.</p>
+<section id="imputation-simple-par-une-valeur-statistique" class="level4" data-number="3.3.1">
+<h4 data-number="3.3.1" class="anchored" data-anchor-id="imputation-simple-par-une-valeur-statistique"><span class="header-section-number">3.3.1</span> Imputation simple par une valeur statistique</h4>
+<p>La <strong>moyenne</strong> consiste à remplacer les valeurs manquantes par la moyenne des valeurs observées pour la variable concernée <span class="citation" data-cites="rubin1976inference">(<a href="#ref-rubin1976inference" role="doc-biblioref">2</a>)</span>. La <strong>médiane</strong> est une méthode robuste aux valeurs extrêmes. Elle remplace les valeurs manquantes par la médiane des valeurs observées <span class="citation" data-cites="tukey1977exploratory">(<a href="#ref-tukey1977exploratory" role="doc-biblioref">5</a>)</span>. Le <strong>mode</strong> est adaptée aux variables catégorielles <span class="citation" data-cites="mosteller1977data">(<a href="#ref-mosteller1977data" role="doc-biblioref">6</a>)</span>. Elle remplace les valeurs manquantes par la modalité la plus fréquente. La <strong>valeur constante</strong> consiste à remplacer les valeurs manquantes par une valeur prédéfinie <span class="citation" data-cites="schafer1997analysis">(<a href="#ref-schafer1997analysis" role="doc-biblioref">7</a>)</span> (ex : 0, -999, etc.). Les formules sont écrites en <a href="#imput_simple">annexe</a>.</p>
+</section>
+<section id="imputation-basée-sur-les-voisins-k-nearest-neighbors-knn" class="level4" data-number="3.3.2">
+<h4 data-number="3.3.2" class="anchored" data-anchor-id="imputation-basée-sur-les-voisins-k-nearest-neighbors-knn"><span class="header-section-number">3.3.2</span> Imputation basée sur les voisins : K-Nearest Neighbors (KNN)</h4>
+<p>L’imputation par <strong>KNN</strong> repose sur la similarité entre les observations <span class="citation" data-cites="cover1967nearest">(<a href="#ref-cover1967nearest" role="doc-biblioref">8</a>)</span>. Pour chaque valeur manquante, les k plus proches voisins sont identifiés et la valeur manquante est estimée en utilisant leurs valeurs. La formule pour les variables numériques est en <a href="#imput_knn">annexe</a>. Pour les variables catégorielles, la valeur la plus fréquente parmi les voisins est choisie.</p>
+</section>
+<section id="imputation-par-modèles-avancés" class="level4" data-number="3.3.3">
+<h4 data-number="3.3.3" class="anchored" data-anchor-id="imputation-par-modèles-avancés"><span class="header-section-number">3.3.3</span> Imputation par modèles avancés</h4>
+<section id="softimputer" class="level5" data-number="3.3.3.1">
+<h5 data-number="3.3.3.1" class="anchored" data-anchor-id="softimputer"><span class="header-section-number">3.3.3.1</span> SoftImputer</h5>
+<p><strong>SoftImputer</strong> est une méthode d’imputation des valeurs manquantes basée sur la factorisation de matrices <span class="citation" data-cites="mazumder2010spectral">(<a href="#ref-mazumder2010spectral" role="doc-biblioref">9</a>)</span>. Son principe repose sur l’estimation d’une matrice complète en effectuant une décomposition en valeurs singulières (SVD) tout en appliquant un seuillage doux sur les valeurs singulières pour favoriser la parcimonie. L’algorithme est détaillé en <a href="#imput_softimputer">annexe</a>. Cette méthode est efficace pour capturer la structure sous-jacente des données tout en limitant le surajustement.</p>
+</section>
+<section id="acp" class="level5" data-number="3.3.3.2">
+<h5 data-number="3.3.3.2" class="anchored" data-anchor-id="acp"><span class="header-section-number">3.3.3.2</span> ACP</h5>
+<p><strong>missMDA</strong> utilise des techniques de réduction de dimension telles que l’ACP pour imputer les valeurs manquantes <span class="citation" data-cites="josse2016missmda">(<a href="#ref-josse2016missmda" role="doc-biblioref">10</a>)</span>. Cette méthode est particulièrement adaptée aux données continues. L’algorithme est détaillé en <a href="#imput_acp">annexe</a>.</p>
+</section>
+<section id="imputation-par-mice-multiple-imputation-by-chained-equations" class="level5" data-number="3.3.3.3">
+<h5 data-number="3.3.3.3" class="anchored" data-anchor-id="imputation-par-mice-multiple-imputation-by-chained-equations"><span class="header-section-number">3.3.3.3</span> Imputation par [M]ICE ([Multiple] Imputation by Chained Equations)</h5>
+<p><strong>MICE</strong> réalise des imputations multiples par équations chaînées <span class="citation" data-cites="rubin1987multiple">(<a href="#ref-rubin1987multiple" role="doc-biblioref">11</a>)</span>. Chaque variable avec des valeurs manquantes est modélisée en fonction des autres variables de manière itérative. Ici on étudiera une seule imputation générée afin de simplifier l’analyse. La technique sera donc nommée ICE et décrite en <a href="#imput_ice">annexe</a>.</p>
+</section>
+<section id="imputation-par-missforest" class="level5" data-number="3.3.3.4">
+<h5 data-number="3.3.3.4" class="anchored" data-anchor-id="imputation-par-missforest"><span class="header-section-number">3.3.3.4</span> Imputation par MissForest</h5>
+<p><strong>MissForest</strong> est une méthode non paramétrique basée sur les forêts aléatoires <span class="citation" data-cites="mazumder2010spectral">(<a href="#ref-mazumder2010spectral" role="doc-biblioref">9</a>)</span>. Elle impute les valeurs manquantes en construisant un modèle de prédiction pour chaque variable contenant des valeurs manquantes. À chaque itération, les forêts aléatoires sont utilisées pour prédire les valeurs manquantes en utilisant les autres variables comme prédicteurs (<a href="#imput_missforest">algorithmique</a>).</p>
+</section>
+</section>
+</section>
+<section id="plan-dévaluation" class="level3" data-number="3.4">
+<h3 data-number="3.4" class="anchored" data-anchor-id="plan-dévaluation"><span class="header-section-number">3.4</span> Plan d’évaluation</h3>
+<section id="génération-des-données-manquantes-1" class="level4" data-number="3.4.1">
+<h4 data-number="3.4.1" class="anchored" data-anchor-id="génération-des-données-manquantes-1"><span class="header-section-number">3.4.1</span> Génération des données manquantes</h4>
+<p>On commence par générer les données manquantes suivant les trois types de mécanismes (MCAR, MAR et MNAR) et suivant différentes proportions : 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.8. Nous répétons ce processus <strong>100 fois</strong>.</p>
+</section>
+<section id="optimisation-des-méthodes" class="level4" data-number="3.4.2">
+<h4 data-number="3.4.2" class="anchored" data-anchor-id="optimisation-des-méthodes"><span class="header-section-number">3.4.2</span> Optimisation des méthodes</h4>
+<p>Une fois les données générées, nous appliquons les différentes méthodes d’imputation. Ces méthodes utilisent des approches variées et nécessitent souvent des hyperparamètres pour optimiser leurs performances. Pour chaque méthode, nous explorons différentes combinaisons d’hyperparamètres à l’aide d’une recherche par grille (Grid Search). Notre objectif est de trouver la combinaison qui maximise l’exactitude (accuracy) pour les variables catégorielles et minimise l’erreur quadratique moyenne (MSE) pour les variables numériques. Pour éviter le surajustement, nous utilisons une validation croisée en 5 sous-échantillons (K-Fold Cross Validation). Nous divisons le jeu de données en 5 groupes, et chaque configuration d’hyperparamètres est testée sur 4 groupes et validée sur le 5ème. Nous calculons la moyenne des performances pour les meilleurs hyperparamètres déterminés.</p>
+</section>
+<section id="imputation" class="level4" data-number="3.4.3">
+<h4 data-number="3.4.3" class="anchored" data-anchor-id="imputation"><span class="header-section-number">3.4.3</span> Imputation</h4>
+<p>Une fois les méthodes optimisées, nous les appliquons à l’ensemble des données manquantes générées <strong>10 fois</strong> et nous calculons la moyenne des performances et l’écart type associé.</p>
+</section>
+<section id="critères-dévaluation" class="level4" data-number="3.4.4">
+<h4 data-number="3.4.4" class="anchored" data-anchor-id="critères-dévaluation"><span class="header-section-number">3.4.4</span> Critères d’évaluation</h4>
+<p>Nous cherchons à détermine l’influence du taux de données manquantes suivant les différents mécanismes sur les méthodes d’imputations optimisées via l’exactitude (variable catégorielle) ou la MSE (variable numérique), le temps d’exécution de l’imputation, le pic de mémoire atteint lors de l’imputation et la variabilité des valeurs imputées.</p>
+</section>
+</section>
+</section>
+<section id="résultats" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="résultats"><span class="header-section-number">4</span> Résultats</h2>
+<section id="bruts" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="bruts"><span class="header-section-number">4.1</span> Bruts</h3>
+<p>Les méthodes d’imputation des variables catégorielles montrent que <strong>MissForest</strong> offre les meilleures performances, suivie par <strong>ICE</strong> et <strong>KNN</strong>, tandis que les méthodes plus simples sont les moins performantes. En termes de rapidité et d’utilisation mémoire, <strong>toutes les méthodes, sauf MissForest, sont efficaces</strong>, bien que <strong>KNN soit plus coûteuse en mémoire</strong>. De plus, les méthodes simples sont particulièrement sensibles à la proportion de données manquantes, ce qui peut dégrader leur efficacité, tandis que les autres techniques sont plus robustes face à cette variabilité.</p>
+<p>Pour les variables numériques, <strong>ICE, KNN et MissForest</strong> offrent les meilleures performances d’imputation, alors que <strong>l’ACP</strong> se révèle moins efficace. Toutefois, si l’on considère le temps d’exécution, <strong>les méthodes simples et KNN sont plus rapides</strong>, contrairement à MissForest. En termes de consommation mémoire, <strong>seule KNN pose problème</strong>, les autres étant plus légères. Enfin, la sensibilité aux mécanismes de données manquantes montre que les méthodes simples sont sensibles aux performances, tandis que <strong>SoftImputer est plus gourmand en temps d’exécution</strong> lorsqu’il est confronté à ces variations.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Var. catégorielle</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Var. numérique</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<div id="5e6a736f" class="cell" data-execution_count="2">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="missingdatalab_files/figure-html/cell-3-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div id="c5112c4b" class="cell" data-execution_count="3">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="missingdatalab_files/figure-html/cell-4-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="récapitulatifs" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="récapitulatifs"><span class="header-section-number">4.2</span> Récapitulatifs</h3>
+<p>Chaque méthode a ses forces et ses faiblesses : les approches simples sont rapides et faciles à mettre en œuvre, mais elles peuvent manquer de précision. À l’inverse, les méthodes avancées offrent de meilleurs résultats, mais elles sont plus gourmandes en temps et en ressources. Nos tests ont montré que le choix de la méthode dépend fortement du type de données manquantes et du contexte d’analyse. Par exemple, pour des données MCAR ou MAR, des techniques comme KNN ou MissForest fonctionnent bien. En revanche, pour des données MNAR (qui sont plus complexes à gérer), des méthodes comme MissForest ou ICE s’avèrent plus efficaces. Cela dit, ces dernières demandent davantage de calculs et d’efforts. Voici un tableau récapitulatif des très bonnes (X) ou bonnes (x) performances et robustesses de chaque méthode :</p>
+<table class="table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Méthode</th>
+<th>Qualité d’imputation</th>
+<th>Temps d’éxécution</th>
+<th>Ressources</th>
+<th>Proportion de NA</th>
+<th>Mécanisme de NA</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Simple</td>
+<td></td>
+<td>X</td>
+<td>X</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>KNN</td>
+<td>x</td>
+<td>X</td>
+<td></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr class="odd">
+<td>SoftImputer</td>
+<td></td>
+<td>x</td>
+<td>X</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>ACP</td>
+<td>x</td>
+<td>x</td>
+<td>X</td>
+<td></td>
+<td>X</td>
+</tr>
+<tr class="odd">
+<td>ICE</td>
+<td>X</td>
+<td>x</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr class="even">
+<td>MissForest</td>
+<td>X</td>
+<td></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+</tbody>
+</table>
+<p>Néanmoins, bien qu’il nous ait été permis de faire ressortir ces informations par le biais de cette étude, ces dernières ne sont malheuresement que difficilement exploitable. En effet, il s’avère être une tâche ardue, pour ne pas dire impossible, de reconnaître le type de données manquantes sur des données réelles. S’il existe bien quelques tests statistiques afin d’identifier si les données sont de type MCAR <span class="citation" data-cites="little1988test">(<a href="#ref-little1988test" role="doc-biblioref">12</a>)</span>, il n’existe pas de réelle méthode pour permettre de déceler des données manquantes MAR ou MNAR.</p>
+</section>
+</section>
+<section id="technologies-utilisées" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="technologies-utilisées"><span class="header-section-number">5</span> Technologies utilisées</h2>
+<p>Nous n’avons pas cherché à innover ou à utiliser les dernières tendances technologiques, mais plutôt à consolider nos acquis en nous appuyant sur des outils éprouvés et maîtrisés. Le langage principal utilisé est Python, avec R pour la génération des données. Nous avons privilégié des bibliothèques bien établies pour l’analyse et la manipulation des données (<code>NumPy</code> <span class="citation" data-cites="harris2020array">(<a href="#ref-harris2020array" role="doc-biblioref">13</a>)</span>, <code>Pandas</code> <span class="citation" data-cites="mckinney2010data">(<a href="#ref-mckinney2010data" role="doc-biblioref">14</a>)</span>, <code>SciPy</code> <span class="citation" data-cites="virtanen2020scipy">(<a href="#ref-virtanen2020scipy" role="doc-biblioref">15</a>)</span>), la visualisation (<code>Matplotlib</code> <span class="citation" data-cites="hunter2007matplotlib">(<a href="#ref-hunter2007matplotlib" role="doc-biblioref">16</a>)</span>, <code>Seaborn</code> <span class="citation" data-cites="waskom2021seaborn">(<a href="#ref-waskom2021seaborn" role="doc-biblioref">17</a>)</span>) et le machine learning (<code>Scikit-learn</code> <span class="citation" data-cites="pedregosa2011scikit">(<a href="#ref-pedregosa2011scikit" role="doc-biblioref">18</a>)</span>, <code>Joblib</code> <span class="citation" data-cites="joblib">(<a href="#ref-joblib" role="doc-biblioref">19</a>)</span>, <code>Threadpoolctl</code> <span class="citation" data-cites="threadpoolctl">(<a href="#ref-threadpoolctl" role="doc-biblioref">20</a>)</span>), garantissant ainsi une approche fiable et reproductible.</p>
+</section>
+<section id="difficultés-et-leçons-apprises" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="difficultés-et-leçons-apprises"><span class="header-section-number">6</span> Difficultés et leçons apprises</h2>
+<ol type="1">
+<li>Compatibilité avec les bibliothèques existantes<br>
+</li>
+</ol>
+<ul>
+<li>Il est crucial de bien définir les formats de données en entrée et en sortie pour assurer une compatibilité fluide avec <code>NumPy</code>, <code>Pandas</code> et <code>Scikit-learn</code>.<br>
+</li>
+<li>Standardiser les formats d’entrée (ex. <code>DataFrame</code> vs <code>array</code>) évite des erreurs lors du passage entre différentes méthodes d’imputation.</li>
+</ul>
+<ol start="2" type="1">
+<li>Uniformisation des entrées et sorties<br>
+</li>
+</ol>
+<ul>
+<li>Chaque méthode ayant ses propres exigences en matière de format d’entrée, un prétraitement uniforme doit être mis en place pour éviter les erreurs.<br>
+</li>
+<li>Une normalisation préalable peut améliorer la cohérence des imputations (ex. standardisation des valeurs numériques).</li>
+</ul>
+<ol start="3" type="1">
+<li>Structuration des méthodes d’imputation sous forme de classes<br>
+</li>
+</ol>
+<ul>
+<li>La modularisation sous forme de classes permet une meilleure réutilisation et lisibilité du code.<br>
+</li>
+<li>Il est préférable d’hériter d’une classe mère contenant des fonctionnalités communes.</li>
+</ul>
+<ol start="4" type="1">
+<li>Validation rigoureuse des imputations<br>
+</li>
+</ol>
+<ul>
+<li>Masquer artificiellement des valeurs et comparer l’imputation avec l’observation réelle est une approche fiable pour évaluer la qualité des méthodes.</li>
+<li>Assurer une séparation correcte entre les ensembles d’entraînement et de validation pour éviter les fuites de données.</li>
+</ul>
+<ol start="5" type="1">
+<li>Traitement efficace des données massives<br>
+</li>
+</ol>
+<ul>
+<li>L’optimisation des calculs est essentielle pour appliquer des méthodes d’imputation sur de grands jeux de données.<br>
+</li>
+<li>Recourir à des implémentations vectorisées, au multiprocessing ou à des approches incrémentales peut réduire le temps d’exécution.</li>
+</ul>
+</section>
+<section id="lien-vers-le-projet" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="lien-vers-le-projet"><span class="header-section-number">7</span> Lien vers le projet</h2>
+<p>Le code source est accessible sur GitHub : <a href="https://github.com/NCSdecoopman/MissingDataLab">https://github.com/NCSdecoopman/MissingDataLab</a>.</p>
+</section>
+<section id="cas-dusage-et-perspectives" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="cas-dusage-et-perspectives"><span class="header-section-number">8</span> Cas d’usage et perspectives</h2>
+<p>Les données manquantes biaisent les analyses et les modèles d’IA, rendant essentielle l’identification de leur type (MCAR, MAR, MNAR). Un outil dédié permettrait d’analyser ces motifs, puis d’adapter l’imputation en conséquence. L’objectif est d’intégrer des modèles hybrides pour imputer intelligemment les valeurs manquantes selon leur nature. Automatiser ce processus améliorerait la précision des modèles tout en réduisant l’intervention humaine, avec des applications clés en météo, santé et finance.</p>
+</section>
+<section id="références" class="level2" data-number="9">
+<h2 data-number="9" class="anchored" data-anchor-id="références"><span class="header-section-number">9</span> Références</h2>
+<div id="refs" class="references csl-bib-body" role="list">
+<div id="ref-simstudy" class="csl-entry" role="listitem">
+<div class="csl-left-margin">1. </div><div class="csl-right-inline">Goldfeld K. simstudy: Simulation of Study Data [Internet]. 2021. Disponible sur: <a href="https://cran.r-project.org/web/packages/simstudy/">https://cran.r-project.org/web/packages/simstudy/</a></div>
+</div>
+<div id="ref-rubin1976inference" class="csl-entry" role="listitem">
+<div class="csl-left-margin">2. </div><div class="csl-right-inline">Rubin DB. Inference and missing data. Biometrika [Internet]. 1976;63(3):581‑92. Disponible sur: <a href="https://doi.org/10.1093/biomet/63.3.581">https://doi.org/10.1093/biomet/63.3.581</a></div>
+</div>
+<div id="ref-little1987statistical" class="csl-entry" role="listitem">
+<div class="csl-left-margin">3. </div><div class="csl-right-inline">Little RJ, Rubin DB. Statistical analysis with missing data. Journal of the American Statistical Association [Internet]. 1987;82(397):87‑99. Disponible sur: <a href="https://doi.org/10.2307/2289136">https://doi.org/10.2307/2289136</a></div>
+</div>
+<div id="ref-vanbuuren2018flexible" class="csl-entry" role="listitem">
+<div class="csl-left-margin">4. </div><div class="csl-right-inline">Van Buuren S. Flexible Imputation of Missing Data [Internet]. Chapman; Hall/CRC; 2018. Disponible sur: <a href="https://doi.org/10.1201/9780429492259">https://doi.org/10.1201/9780429492259</a></div>
+</div>
+<div id="ref-tukey1977exploratory" class="csl-entry" role="listitem">
+<div class="csl-left-margin">5. </div><div class="csl-right-inline">Tukey JW. Exploratory Data Analysis [Internet]. Addison-Wesley; 1977. Disponible sur: <a href="https://www.worldcat.org/title/13580185">https://www.worldcat.org/title/13580185</a></div>
+</div>
+<div id="ref-mosteller1977data" class="csl-entry" role="listitem">
+<div class="csl-left-margin">6. </div><div class="csl-right-inline">Mosteller F, Tukey JW. Data Analysis and Regression [Internet]. Addison-Wesley; 1977. Disponible sur: <a href="https://www.worldcat.org/title/1896078">https://www.worldcat.org/title/1896078</a></div>
+</div>
+<div id="ref-schafer1997analysis" class="csl-entry" role="listitem">
+<div class="csl-left-margin">7. </div><div class="csl-right-inline">Schafer JL. Analysis of incomplete multivariate data. Chapman and Hall/CRC [Internet]. 1997; Disponible sur: <a href="https://doi.org/10.1201/9781439821862">https://doi.org/10.1201/9781439821862</a></div>
+</div>
+<div id="ref-cover1967nearest" class="csl-entry" role="listitem">
+<div class="csl-left-margin">8. </div><div class="csl-right-inline">Cover TM, Hart PE. Nearest neighbor pattern classification. IEEE Transactions on Information Theory [Internet]. 1967;13(1):21‑7. Disponible sur: <a href="https://doi.org/10.1109/TIT.1967.1053964">https://doi.org/10.1109/TIT.1967.1053964</a></div>
+</div>
+<div id="ref-mazumder2010spectral" class="csl-entry" role="listitem">
+<div class="csl-left-margin">9. </div><div class="csl-right-inline">Mazumder R, Hastie T, Tibshirani R. Spectral regularization algorithms for learning large incomplete matrices. Journal of Machine Learning Research [Internet]. 2010;11:2287‑322. Disponible sur: <a href="http://www.jmlr.org/papers/v11/mazumder10a.html">http://www.jmlr.org/papers/v11/mazumder10a.html</a></div>
+</div>
+<div id="ref-josse2016missmda" class="csl-entry" role="listitem">
+<div class="csl-left-margin">10. </div><div class="csl-right-inline">Josse J, Husson F. missMDA: a package for handling missing values in multivariate data analysis. Journal of Statistical Software [Internet]. 2016;70:1‑31. Disponible sur: <a href="https://doi.org/10.18637/jss.v070.i01">https://doi.org/10.18637/jss.v070.i01</a></div>
+</div>
+<div id="ref-rubin1987multiple" class="csl-entry" role="listitem">
+<div class="csl-left-margin">11. </div><div class="csl-right-inline">Rubin DB. Multiple Imputation for Nonresponse in Surveys [Internet]. John Wiley &amp; Sons; 1987. Disponible sur: <a href="https://doi.org/10.1002/9780470316696">https://doi.org/10.1002/9780470316696</a></div>
+</div>
+<div id="ref-little1988test" class="csl-entry" role="listitem">
+<div class="csl-left-margin">12. </div><div class="csl-right-inline">Little RJA. A Test of Missing Completely at Random for Multivariate Data with Missing Values. Journal of the American Statistical Association [Internet]. 1988;83(404):1198‑202. Disponible sur: <a href="https://doi.org/10.1080/01621459.1988.10478722">https://doi.org/10.1080/01621459.1988.10478722</a></div>
+</div>
+<div id="ref-harris2020array" class="csl-entry" role="listitem">
+<div class="csl-left-margin">13. </div><div class="csl-right-inline">Harris CR et al. Array programming with NumPy. Nature [Internet]. 2020;585:357‑62. Disponible sur: <a href="https://doi.org/10.1038/s41586-020-2649-2">https://doi.org/10.1038/s41586-020-2649-2</a></div>
+</div>
+<div id="ref-mckinney2010data" class="csl-entry" role="listitem">
+<div class="csl-left-margin">14. </div><div class="csl-right-inline">McKinney W. Data Structures for Statistical Computing in Python. Proceedings of the 9th Python in Science Conference [Internet]. 2010;445:51‑6. Disponible sur: <a href="https://doi.org/10.25080/Majora-92bf1922-00a">https://doi.org/10.25080/Majora-92bf1922-00a</a></div>
+</div>
+<div id="ref-virtanen2020scipy" class="csl-entry" role="listitem">
+<div class="csl-left-margin">15. </div><div class="csl-right-inline">Virtanen P et al. SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods [Internet]. 2020;17:261‑72. Disponible sur: <a href="https://doi.org/10.1038/s41592-019-0686-2">https://doi.org/10.1038/s41592-019-0686-2</a></div>
+</div>
+<div id="ref-hunter2007matplotlib" class="csl-entry" role="listitem">
+<div class="csl-left-margin">16. </div><div class="csl-right-inline">Hunter JD. Matplotlib: A 2D Graphics Environment. Computing in Science &amp; Engineering [Internet]. 2007;9(3):90‑5. Disponible sur: <a href="https://doi.org/10.1109/MCSE.2007.55">https://doi.org/10.1109/MCSE.2007.55</a></div>
+</div>
+<div id="ref-waskom2021seaborn" class="csl-entry" role="listitem">
+<div class="csl-left-margin">17. </div><div class="csl-right-inline">Waskom ML. Seaborn: Statistical Data Visualization. Journal of Open Source Software [Internet]. 2021;6(60):3021. Disponible sur: <a href="https://doi.org/10.21105/joss.03021">https://doi.org/10.21105/joss.03021</a></div>
+</div>
+<div id="ref-pedregosa2011scikit" class="csl-entry" role="listitem">
+<div class="csl-left-margin">18. </div><div class="csl-right-inline">Pedregosa F, Varoquaux G, Gramfort A, Michel V, Thirion B, Grisel O, et al. Scikit-learn: Machine Learning in Python. Journal of Machine Learning Research [Internet]. 2011;12:2825‑30. Disponible sur: <a href="https://jmlr.org/papers/v12/pedregosa11a.html">https://jmlr.org/papers/v12/pedregosa11a.html</a></div>
+</div>
+<div id="ref-joblib" class="csl-entry" role="listitem">
+<div class="csl-left-margin">19. </div><div class="csl-right-inline">Team JD. Joblib: Running Python Functions as Pipeline Jobs [Internet]. 2020. Disponible sur: <a href="https://joblib.readthedocs.io/en/latest/">https://joblib.readthedocs.io/en/latest/</a></div>
+</div>
+<div id="ref-threadpoolctl" class="csl-entry" role="listitem">
+<div class="csl-left-margin">20. </div><div class="csl-right-inline">Lemaitre G, Walt SJ van der, Passos A. Threadpoolctl: Python Bindings to Control Thread-Pool Behavior in Native Libraries [Internet]. 2022. Disponible sur: <a href="https://github.com/joblib/threadpoolctl">https://github.com/joblib/threadpoolctl</a></div>
+</div>
+</div>
+</section>
+<section id="annexe-1" class="level2" data-number="10">
+<h2 data-number="10" class="anchored" data-anchor-id="annexe-1"><span class="header-section-number">10</span> Annexes 1 : forumulations mathématiques des données manquantes</h2>
+<p>Dans cette section, nous décrivons les différents mécanismes de données manquantes en utilisant des formulations mathématiques pour clarifier les conditions sous lesquelles ces mécanismes se produisent. Ces formulations reposent sur la probabilité conditionnelle, notée <span class="math inline">\(\mathbb{P}\)</span>, où <span class="math inline">\(M\)</span> représente l’indicateur de donnée manquante (avec <span class="math inline">\(M = 1\)</span> si la donnée est manquante et <span class="math inline">\(M = 0\)</span> sinon) et <span class="math inline">\(X\)</span> désigne l’ensemble des variables observées ou non observées. Soit <span class="math inline">\(n\)</span> le nombre d’observations (lignes) et <span class="math inline">\(p\)</span> le nombre de variables (colonnes). On note <span class="math inline">\(X \in \mathbb{R}^{n\times p}, \ M = \{0,1\}^{n\times p}\)</span> avec <span class="math inline">\(1\)</span> pour NA et <span class="math inline">\(0\)</span> sinon.</p>
+<p>Nous utilisons les notations suivantes : <span class="math inline">\(X_{obs}\)</span> les valeurs observées dans le jeu de données et <span class="math inline">\(X_{miss}\)</span> les valeurs manquantes dans le jeu de données.</p>
+<section id="mcar" class="level3" data-number="10.1">
+<h3 data-number="10.1" class="anchored" data-anchor-id="mcar"><span class="header-section-number">10.1</span> Données MCAR</h3>
+<p><span class="math inline">\(\mathbb{P}(M=1\mid X) = \mathbb{P}(M=1)\)</span></p>
+</section>
+<section id="mar" class="level3" data-number="10.2">
+<h3 data-number="10.2" class="anchored" data-anchor-id="mar"><span class="header-section-number">10.2</span> Données MAR</h3>
+<p><span class="math inline">\(\forall \ X_{miss}, \ \mathbb{P}(M=1 \mid X) = \mathbb{P}(M=1 \mid X_{obs})\)</span></p>
+</section>
+<section id="mnar" class="level3" data-number="10.3">
+<h3 data-number="10.3" class="anchored" data-anchor-id="mnar"><span class="header-section-number">10.3</span> Données MNAR</h3>
+<p><span class="math inline">\(\mathbb{P}(M=1 \mid X) = \mathbb{P}(M=1 \mid X_{obs}, \ X_{miss})\)</span></p>
+</section>
+<section id="prob_na" class="level3" data-number="10.4">
+<h3 data-number="10.4" class="anchored" data-anchor-id="prob_na"><span class="header-section-number">10.4</span> Probabilité d’abscence</h3>
+<p>On note <span class="math inline">\(i\)</span> la <span class="math inline">\(i\)</span>-ième observation et <span class="math inline">\(j\)</span> la <span class="math inline">\(j\)</span>-ième variable :</p>
+<p><span class="math display">\[
+\forall \ (i, j) \in \{1, \dots, n\} \times \{1, \dots, p\}, \ \mathbb{P}(M_{ij} = 1 \mid Z, Y) = \sigma(\alpha_j + Z_i^\top . \beta_j + \gamma_j . Y_i)
+\]</span></p>
+<p>Avec :</p>
+<ul>
+<li><span class="math inline">\(Z\)</span> la matrice des covariables <span class="math inline">\(X\)</span> excluant <span class="math inline">\(Y\)</span></li>
+<li><span class="math inline">\(Y\)</span> le vecteur des valeurs de la variable cible</li>
+<li><span class="math inline">\(\alpha_j\)</span>, <span class="math inline">\(\beta_j\)</span> et <span class="math inline">\(\gamma_j\)</span> sont les paramètres d’ajustement propres à la variable <span class="math inline">\(j\)</span></li>
+<li><span class="math inline">\(\forall \ z \in \mathbb{R}, \ \sigma(z) = \frac{1}{1 + e^{-z}}\)</span></li>
+</ul>
+<p>L’intercept <span class="math inline">\(\alpha\)</span> ajuste globalement la proportion de données manquantes. En le modifiant, on peut augmenter ou réduire le taux global de valeurs manquantes. Les poids <span class="math inline">\(\beta\)</span> déterminent l’impact de chaque prédicteur sur la probabilité de données manquantes. Un poids élevé signifie une influence importante de la variable correspondante. Le coefficient <span class="math inline">\(\gamma\)</span> traduit l’influence de la valeur <span class="math inline">\(Y_i\)</span> sur la probabilité d’absence.</p>
+</section>
+<section id="prob_argmin" class="level3" data-number="10.5">
+<h3 data-number="10.5" class="anchored" data-anchor-id="prob_argmin"><span class="header-section-number">10.5</span> Optimisation</h3>
+<p>Pour atteintre une proportion cible <span class="math inline">\(\pi_{\text{target}}\)</span> de données manquantes on cherche à <span class="math inline">\(j\)</span> fixé :</p>
+<p><span class="math display">\[
+\underset{(\mathcal{A},\, \mathcal{B},\, \mathcal{G})}{\arg\min\;} \ \bigg| \frac{1}{n} \sum_{k=1}^n  \sigma(\mathcal{A} + Z_k^\top \mathcal{B} + \mathcal{G} Y_k) - \pi_{\text{target}} \bigg|
+\]</span></p>
+<p>Si <span class="math inline">\(\mathcal{B} = 0\)</span> et <span class="math inline">\(\mathcal{G} = 0\)</span>, le mécanisme est MCAR<br> Si <span class="math inline">\(\mathcal{B} \neq 0\)</span> et <span class="math inline">\(\mathcal{G} = 0\)</span>, le mécanisme est MAR<br> Si <span class="math inline">\(\mathcal{B} \neq 0\)</span> et <span class="math inline">\(\mathcal{G} \neq 0\)</span>, le mécanisme est MNAR</p>
+</section>
+</section>
+<section id="annexe-2" class="level2" data-number="11">
+<h2 data-number="11" class="anchored" data-anchor-id="annexe-2"><span class="header-section-number">11</span> Annexe 2 : formulations mathématiques des imputations</h2>
+<p>Soit <span class="math inline">\(x_j\)</span> la valeur de la variable <span class="math inline">\(X\)</span> pour l’observation <span class="math inline">\(j\)</span>. L’observation <span class="math inline">\(i\)</span> est imputée par <span class="math inline">\(\hat{x}_i\)</span> pour générer une variable sans données manquantes <span class="math inline">\(\hat{X}\)</span>.</p>
+<section id="imput_simple" class="level3" data-number="11.1">
+<h3 data-number="11.1" class="anchored" data-anchor-id="imput_simple"><span class="header-section-number">11.1</span> Simple</h3>
+<ul>
+<li>La moyenne : <span class="math inline">\(\hat{x}_i = \frac{1}{n} \sum_{j=1}^{n} x_j\)</span></li>
+<li>La médiane : <span class="math inline">\(\hat{x}_i = \text{mediane}(x_j)\)</span></li>
+<li>Le mode : <span class="math inline">\(\hat{x}_i = \text{mode}(x_j)\)</span></li>
+</ul>
+</section>
+<section id="imput_knn" class="level3" data-number="11.2">
+<h3 data-number="11.2" class="anchored" data-anchor-id="imput_knn"><span class="header-section-number">11.2</span> KNN</h3>
+<p>Soit <span class="math inline">\(k\)</span> le nombre de voisins : <span class="math inline">\(\hat{x}_i = \frac{1}{k} \sum_{j=1}^{k} x_{j}\)</span></p>
+</section>
+<section id="imput_softimputer" class="level3" data-number="11.3">
+<h3 data-number="11.3" class="anchored" data-anchor-id="imput_softimputer"><span class="header-section-number">11.3</span> SoftImputer</h3>
+<p>L’algorithme minimise l’objectif suivant : <span class="math inline">\(\min_{X} \frac{1}{2} \|P_\Omega(M - X)\|_F^2 + \lambda \|X\|_*\)</span></p>
+<p>où <span class="math inline">\(P_\Omega\)</span> est l’opérateur de projection sur les entrées observées, <span class="math inline">\(\|\cdot\|_F\)</span> est la norme de Frobenius, et <span class="math inline">\(\|\cdot\|_*\)</span> est la norme nucléaire (somme des valeurs singulières).</p>
+<p>L’algorithme suit les étapes suivantes :</p>
+<ol type="1">
+<li>Initialisation en remplaçant les valeurs manquantes par la moyenne des colonnes</li>
+<li>Application d’une décomposition en valeurs singulières (SVD) : <span class="math inline">\(X = U \Sigma V^T\)</span></li>
+<li>Application du seuillage doux aux valeurs singulières : <span class="math inline">\(\tilde{\sigma}_i = \max(0, \sigma_i - \lambda)\)</span></li>
+<li>Reconstruction de la matrice imputée : <span class="math inline">\(\hat{X} = U \tilde{\Sigma} V^T\)</span></li>
+<li>Réimposition des valeurs observées sur la matrice reconstruite : <span class="math inline">\(\hat{X}_{ij} = X_{ij}\)</span></li>
+<li>Répétition jusqu’à convergence selon un critère <span class="math inline">\(\epsilon\)</span> basé sur la norme de Frobenius : <span class="math inline">\(\|\hat{X}_{(t+1)} - \hat{X}_{(t)})\|_F &lt; \epsilon\)</span></li>
+</ol>
+<p><span class="math inline">\(\lambda\)</span> et <span class="math inline">\(\epsilon\)</span> étant des hyperparamètres.</p>
+</section>
+<section id="imput_acp" class="level3" data-number="11.4">
+<h3 data-number="11.4" class="anchored" data-anchor-id="imput_acp"><span class="header-section-number">11.4</span> ACP</h3>
+<p>L’algorithme suit les étapes suivantes :</p>
+<ol type="1">
+<li>Imputation initiale par la moyenne ou le mode</li>
+<li>Application d’une ACP sur les données</li>
+<li>Imputation selon le modèle ACP</li>
+<li>Itération jusqu’à convergence</li>
+</ol>
+</section>
+<section id="imput_ice" class="level3" data-number="11.5">
+<h3 data-number="11.5" class="anchored" data-anchor-id="imput_ice"><span class="header-section-number">11.5</span> ICE</h3>
+<p>Soit :</p>
+<ul>
+<li><span class="math inline">\(X_1, X_2, \dots, X_p\)</span> le vecteur des variables explicatives utilisées pour l’imputation</li>
+<li><span class="math inline">\(\beta_0, \beta_1, \dots, \beta_p\)</span> les coefficients de régression estimés</li>
+<li><span class="math inline">\(\epsilon \sim \mathcal{N}(0, \sigma^2)\)</span> le terme d’erreur de variance <span class="math inline">\(\sigma^2\)</span></li>
+<li><span class="math inline">\(k\)</span> une catégorie spécifique de la variable à imputer</li>
+<li><span class="math inline">\(K\)</span> la catégorie de référence dans la régression logistique</li>
+</ul>
+<ol type="1">
+<li>L’algorithme commence par une imputation initiale des valeurs manquantes à l’aide d’une méthode simple (moyenne ou mode) pour obtenir <span class="math inline">\(\hat{X}\)</span></li>
+<li>L’imputation est ensuite affinée par régression, selon la nature de <span class="math inline">\(\hat{X}\)</span>
+<ul>
+<li>Pour une variable continue : régression linéaire<br><span class="math inline">\(\hat{x}_{i} = \beta_0 + \sum_{j=1}^{p} \beta_j x_{ij} + \epsilon_i\)</span></li>
+<li>Pour une variable catégorielle : régression logistique multinomiale<br><span class="math inline">\(\log\left(\frac{P(\hat{x}_{i} = k)}{P(x_i = K)}\right) = \beta_0 + \sum_{j=1}^{p} \beta_j x_{ij}\)</span></li>
+</ul></li>
+<li>Après la première estimation (dans notre cas ICE), l’algorithme procède à une imputation itérative pour améliorer la précision. Ainsi, à chaque itération, les estimations deviennent plus précises en tenant compte des interactions entre les variables.</li>
+</ol>
+</section>
+<section id="imput_missforest" class="level3" data-number="11.6">
+<h3 data-number="11.6" class="anchored" data-anchor-id="imput_missforest"><span class="header-section-number">11.6</span> MissForest</h3>
+<ol type="1">
+<li>Initialisation par des valeurs simples (moyenne, mode)</li>
+<li>Utilisation de forêts aléatoires pour prédire les valeurs manquantes à partir des autres variables</li>
+<li>L’imputation est itérative jusqu’à convergence</li>
+</ol>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copié");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copié");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
